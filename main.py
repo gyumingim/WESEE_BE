@@ -31,20 +31,6 @@ app.add_middleware(
     allow_headers=["*"],  # 모든 HTTP 헤더 허용
 )
 
-def decimal_to_braille_binary(dot_letters):
-    braille_binaries = []
-    
-    for decimal_dot in dot_letters:
-        # 십진수를 6자리 2진수로 변환
-        binary_dot = format(decimal_dot, '06b')
-        
-        # 문자열 2진수를 정수 리스트로 변환
-        binary_list = [int(bit) for bit in binary_dot]
-        
-        braille_binaries.append(binary_list[:6])
-    
-    return braille_binaries
-
 # base64를 이미지로 decode해서 png로 저장
 def save_image_to_base64(base64_image):
     image_bytes = base64.b64decode(base64_image)
@@ -65,15 +51,22 @@ def play_TTS(result):
     tts.save(MP3_PATH)
     ps.playsound(MP3_PATH)
 
-# base64 문자열 입력받고
-# 결과로 OCR 인식 글자 return
-@app.post("/ocr")
-def api_ocr(request: OCRRequest):
-    save_image_to_base64(request.image)
-    result = ocr_base64()
+# 10진수로 변환된 점자를 다시 2진수로
+def decimal_to_braille_binary(dot_letters):
+    braille_binaries = []
+    
+    for decimal_dot in dot_letters:
+        # 십진수를 6자리 2진수로 변환
+        binary_dot = format(decimal_dot, '06b')
+        
+        # 문자열 2진수를 정수 리스트로 변환
+        binary_list = [int(bit) for bit in binary_dot]
+        
+        braille_binaries.append(binary_list[:6])
+    
+    return braille_binaries
 
-    # play_TTS(result)
-
+def letter_to_braille(result):
     dot_letters = []
     for letter in hbcvt.h2b.text(result):
         for consonant in letter[1]:
@@ -85,16 +78,21 @@ def api_ocr(request: OCRRequest):
                 dot_letter += int(dot) * ord_value
                 ord_value /= 2
             dot_letters.append(int(dot_letter))
-    print("------10진수 점자-----")
-    print(dot_letters)
-    converted_braille = decimal_to_braille_binary(dot_letters)
-    print("------복호화 점자-----")
-    print(converted_braille)
+    return dot_letters
 
-    return {"result": result}
+# base64 문자열 입력받고
+# 결과로 OCR 인식 글자 return
+@app.post("/ocr")
+def api_ocr(request: OCRRequest):
+    save_image_to_base64(request.image)
+    result = ocr_base64()
 
+    # 이거 API 사용량 제한있는거 같아서 안함
+    # play_TTS(result)
 
+    dot_letters = letter_to_braille(result)
 
+    return {"dot_letters": dot_letters}
 
 # 시작 코드
 if __name__ == "__main__":
