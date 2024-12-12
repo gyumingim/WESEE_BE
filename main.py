@@ -5,6 +5,7 @@ from schemas.ocr_schema import OCRRequest
 from services.ocr_service import OCRService
 from services.braille_service import BrailleService
 from utils.image_utils import save_image_from_base64
+from services.tts_service import TTSService
 from config import IMG_PATH
 
 app = FastAPI()
@@ -20,11 +21,13 @@ app.add_middleware(
 
 ocr_service = OCRService()
 braille_service = BrailleService()
+tts_service = TTSService()
 
 @app.post("/ocr")
 def api_ocr(request: OCRRequest):
     save_image_from_base64(request.image, IMG_PATH)
     result = ocr_service.extract_text(IMG_PATH)
+    tts_service.play_tts(result)
     dot_letters = braille_service.letter_to_braille(result)
     return {"dot_letters": dot_letters}
 
