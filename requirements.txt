@@ -1,7 +1,0 @@
-fastapi
-paddleocr
-pillow
-python-gtts
-playsound
-hbcvt
-uvicorn
